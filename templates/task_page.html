@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container pt-3 pb-3 rounded" style="background-color: white">
+
+
+    <h3 class="task-category border-bottom border-black pb-2">Today</h3>
+    <ul class="row" id="tasks-today">
+        {% if not tasks_separated.today %}
+        <li class="no-tasks">
+            <p>There are currently no tasks.</p>
+        </li> {% endif %}
+
+
+    </ul>
+
+
+    <h3 class="task-category  border-bottom border-black pb-2">Tomorrow</h3>
+    <ul class="row" id="tasks-tomorrow">
+        {% if not tasks_separated.tomorrow %}
+        <li class="no-tasks">
+            <p>There are currently no tasks.</p>
+        </li> {% endif %}
+
+
+
+    </ul>
+
+    <h3 class=" task-category border-bottom border-black pb-2">Upcoming</h3>
+            <ul class="row" id="tasks">
+
+                {% if not tasks_separated.upcoming %}
+                <li class="no-tasks">
+                    <p>There are currently no tasks.</p>
+                </li>
+                {% endif %}
+
+
+            </ul>
+
+
+            <div class="add-task-button">
+                <div class="plus">+</div>
+                <div class="text">Add Task</div>
+            </div>
+
+            <div id="taskForm" class="hidden-form rounded">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date:</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date" value="">
+                    </div>
+                    <button type="submit" class="btn btn-outline-secondary btn-special text-white mt-4"
+                        onclick="createTask()">Create Task</button>
+                </form>
+
+            </div>
+
+            <ul style="list-style-type: none;">
+                <li class="template  col-lg-4 col-12" style="list-style-type: none">
+
+                    <div class="task-panel card w-100 mb-2">
+
+                        <div class="bg-secondary-subtle card-header d-flex align-items-center">
+                            <input class="form-check-input border-black checkbox me-3" type="checkbox" value="" id="flexCheckDefault">
+                            <input type="text" class="form-control title mt-2 w-auto">
+                        </div>
+                        <div class="card-body">
+                            <textarea type="text" class="form-control description text-secondary mt-2"
+                                contenteditable="true"></textarea>
+                            <input class="form-control due_date mt-2" type="date">
+
+                        </div>
+                        <div class="card-footer">
+
+                            <div class="d-flex justify-content-end mt-2 gap-3">
+                                <button class="btn btn-danger cancel-button">Cancel</button>
+                                <button class="btn btn-primary save-button">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+</div>
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var plusButton = document.querySelector(".plus");
+        var textButton = document.querySelector(".text");
+        var taskForm = document.getElementById("taskForm");
+
+        function toggleTaskForm() {
+            if (taskForm.style.display === "block") {
+                taskForm.style.display = "none";
+            } else {
+                taskForm.style.display = "block";
+            }
+        }
+
+        plusButton.addEventListener("click", toggleTaskForm);
+        textButton.addEventListener("click", toggleTaskForm);
+
+        document.addEventListener("click", function (e) {
+            if (!taskForm.contains(e.target) && e.target !== plusButton && e.target !== textButton) {
+                taskForm.style.display = "none";
+            }
+        });
+    });
+
+    function completeTask(button) {
+        let tasks = button.closest("ul")
+        var taskId = button.closest("li").dataset.taskId;
+        var xhr = new XMLHttpRequest();
+        xhr.open("DELETE", `/api/tasks/${taskId}/`);
+        xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+        xhr.onload = function () {
+            if (xhr.status === 204) {
+                console.log("Task deleted successfully!");
+                updateNoTasksMessage(tasks);
+
+                refreshTasks();
+            } else {
+                console.error("Error deleting task:", xhr.status, xhr.statusText);
+            }
+        };
+
+        xhr.send();
+    }
+    function updateNoTasksMessage(listElement) {
+        const tasksInList = listElement.querySelectorAll('.task');
+        const noTasksMessage = listElement.querySelector('.no-tasks');
+        console.log(tasksInList)
+        if (tasksInList.length === 1 && noTasksMessage) {
+            noTasksMessage.style.display = 'block';
+        }
+    }
+
+
+
+    function createTask() {
+        event.preventDefault();
+        var title = document.getElementById("title").value;
+        var description = document.getElementById("description").value;
+        var due_date = document.getElementById("due_date").value;
+        if (!due_date) {
+            var today = new Date();
+            var day = today.getDate();
+            var month = today.getMonth() + 1;
+            var year = today.getFullYear();
+            due_date = year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
+        }
+
+
+        var data = {
+            title: title,
+            description: description,
+            due_date: due_date
+        };
+
+
+
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/tasks/");
+        xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+        xhr.onload = function () {
+            if (xhr.status === 201) {
+                console.log("Task created successfully!");
+                refreshTasks();
+
+            } else {
+                console.error("Error creating task:", xhr.status, xhr.statusText);
+            }
+        };
+
+        xhr.send(JSON.stringify(data));
+
+    }
+
+    function getCookie(name) {
+
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+
+            var cookies = document.cookie.split(";");
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    async function refreshTasks() {
+        console.log('wow')
+        const data = await fetch('/api/tasks').then(data => data.json());
+        document.querySelectorAll('.task').forEach(task => task.remove());
+
+        let list = document.querySelector('#tasks');
+        let listToday = document.querySelector('#tasks-today');
+        let listTomorrow = document.querySelector('#tasks-tomorrow');
+
+
+
+        data.forEach(task => {
+            let newTask = document.querySelector(".template").cloneNode(true);
+            newTask.classList.remove('template');
+            newTask.querySelector('.title').value = task.title;
+            newTask.dataset.taskId = task.id;
+            newTask.querySelector('.description').value = task.description;
+            newTask.querySelector('.due_date').value = task.due_date;
+            newTask.querySelector('.checkbox').addEventListener('click', function (e) {
+                e.stopPropagation();
+                completeTask(this);
+            })
+
+            newTask.querySelector('.save-button').addEventListener('click', saveButtonFunction);
+            newTask.querySelector('.task-panel').addEventListener('click', taskPanelFunction);
+
+
+            newTask.classList.add('task');
+            let today = new Date();
+
+            today.setHours(0, 0, 0, 0);
+
+            let tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            let taskDate = new Date(task.due_date);
+            taskDate.setHours(0, 0, 0, 0);
+
+
+            if (today.valueOf() == taskDate.valueOf()) {
+                listToday.appendChild(newTask);
+                let tasksInToday = listToday.querySelectorAll('.task');
+
+                let noTasksMessage = listToday.querySelector('.no-tasks');
+
+                if (tasksInToday.length > 0) {
+                    if (noTasksMessage) {
+                        noTasksMessage.style.display = "none";
+                    }
+                } else {
+                    if (!noTasksMessage) {
+                        noTasksMessage.style.display = "block";
+                    }
+                }
+                return;
+            } else if (tomorrow.valueOf() == taskDate.valueOf()) {
+                listTomorrow.appendChild(newTask);
+
+                let tasksInTomorrow = listTomorrow.querySelectorAll('.task');
+
+                let noTasksMessage = listTomorrow.querySelector('.no-tasks');
+
+                if (tasksInTomorrow.length > 0) {
+                    if (noTasksMessage) {
+                        noTasksMessage.style.display = "none";
+                    }
+                } else {
+                    if (!noTasksMessage) {
+                        noTasksMessage.style.display = "block";
+                    }
+                }
+
+                return;
+            } else if (taskDate > tomorrow) {
+                list.appendChild(newTask);
+                let tasksInFuture = list.querySelectorAll('.task');
+
+                let noTasksMessage = list.querySelector('.no-tasks');
+
+                if (tasksInFuture.length > 0) {
+                    if (noTasksMessage) {
+                        noTasksMessage.style.display = "none";
+                    }
+                } else {
+                    if (!noTasksMessage) {
+                        noTasksMessage.style.display = "block";
+                    }
+                }
+                return;
+            }
+
+
+
+
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        refreshTasks();
+
+    });
+
+
+    function saveButtonFunction(e) {
+        e.stopPropagation();
+        var taskPanel = e.target.closest(".task-panel");
+        var title = taskPanel.querySelector(".title").value;
+        var description = taskPanel.querySelector(".description").value;
+        var date = taskPanel.querySelector(".due_date").value;
+
+        var taskId = taskPanel.closest("li").dataset.taskId;
+
+        console.log(title, description)
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("PATCH", `/api/tasks/${taskId}/`, true);
+        xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        var data = JSON.stringify({ title: title, description: description, due_date: date });
+
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                console.log("Task changed successfully!");
+                refreshTasks();
+            } else {
+                console.error("Error changing task:", xhr.status, xhr.statusText);
+            }
+        };
+
+
+        xhr.send(data);
+
+    }
+
+    function taskPanelFunction(e) {
+        console.log(e.target);
+        var taskPanel = this;
+        if (e.target.classList.contains("checkbox")) {
+
+            return;
+        }
+        if (expandedElement && (expandedElement != this)) {
+            expandedElement.classList.remove("expanded");
+        }
+        if (e.target.classList.contains("cancel-button")) {
+            expandedElement = undefined;
+            taskPanel.classList.remove("expanded");
+            return;
+        }
+        expandedElement = taskPanel;
+        taskPanel.classList.add("expanded");
+
+    };
+
+    var expandedElement;
+
+
+
+</script>
+
+</div>
+
+{% endblock content %}

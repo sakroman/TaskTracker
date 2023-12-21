@@ -1,0 +1,47 @@
+{% load static %}
+<header class="px-3 py-2 border-bottom mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+        <a class="d-flex align-items-center me-auto mb-lg-0 me-lg-auto link-body-emphasis text-decoration-none"
+            data-bs-toggle="offcanvas" href="#sidebar" role="button" aria-controls="sidebar">
+            <span class="fs-4">
+                <i class="fa-solid fa-bars"></i>
+            </span>
+        </a>
+
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarLabel">Sidebar</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active text-dark {% if request.path == '/app/tasks' %} fw-bold {% endif %}" href="{% url 'main' %}">
+                            All tasks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark {% if request.path == '/app/tasks/overdue' %} fw-bold {% endif %}" href="{% url 'overdue' %}">
+                            Overdue
+                        </a>
+                    </li>
+
+                </ul>
+                <hr>
+
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle me-3" type="button" id="userDropdown"
+                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span>{{ request.user }}</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-dark" aria-labelledby="userDropdown">
+                <a class="dropdown-item" href="#">Settings</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+            </div>
+        </div>
+    </div>
+</header>

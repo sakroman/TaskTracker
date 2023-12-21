@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container pt-3 pb-3 rounded" style="background-color: white">
+    <h3 class="task-category border-bottom border-black pb-2">Overdue</h3>
+    <ul class="row" id="tasks-overdue">
+        {% if not tasks_separated.overdue %}
+        <li class="no-tasks">
+            <p>No tasks are overdue.</p>
+        </li> 
+        {% endif %}
+
+
+    </ul>
+
+
+    <ul style="list-style-type: none;">
+        <li class="template  col-lg-4 col-12" style="list-style-type: none">
+
+            <div class="task-panel card w-100 mb-2">
+
+                <div class="bg-secondary-subtle card-header ">
+                    <!-- <span class="myButton" ><i class="fas fa-check"></i></span> -->
+                    <input class="form-check-input position-absolute top-0 border-black start-0 p-0 checkbox"
+                        type="checkbox" value="" id="flexCheckDefault">
+                    <input type="text" class=" form-control title mt-2 w-auto">
+                </div>
+                <div class="card-body">
+                    <textarea type="text" class="form-control description text-secondary mt-2"
+                        contenteditable="true"></textarea>
+                    <input class="form-control due_date mt-2" type="date">
+
+                </div>
+                <div class="card-footer">
+
+                    <div class="d-flex justify-content-end mt-2 gap-3">
+                        <button class="btn btn-danger cancel-button">Cancel</button>
+                        <button class="btn btn-primary save-button">Save</button>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+
+</div>
+<script>
+
+
+
+    function completeTask(button) {
+        let tasks = button.closest("ul")
+
+        var taskId = button.closest("li").dataset.taskId;
+        var xhr = new XMLHttpRequest();
+        xhr.open("DELETE", `/api/tasks/${taskId}/`);
+        xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+        xhr.onload = function () {
+            if (xhr.status === 204) {
+                console.log("Task deleted successfully!");
+                updateNoTasksMessage(tasks);
+
+                refreshTasks();
+            } else {
+                console.error("Error deleting task:", xhr.status, xhr.statusText);
+            }
+        };
+
+        xhr.send();
+    }
+    function updateNoTasksMessage(listElement) {
+        const tasksInList = listElement.querySelectorAll('.task');
+        const noTasksMessage = listElement.querySelector('.no-tasks');
+        console.log(tasksInList)
+        if (tasksInList.length === 0 && noTasksMessage) {
+            noTasksMessage.style.display = 'block';
+        }
+    }
+
+
+
+    
+
+    function getCookie(name) {
+
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+
+            var cookies = document.cookie.split(";");
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    async function refreshTasks() {
+        const data = await fetch('/api/tasks').then(data => data.json());
+        document.querySelectorAll('.task').forEach(task => task.remove());
+
+        let listOverdue = document.querySelector('#tasks-overdue');
+
+
+
+        data.forEach(task => {
+            let newTask = document.querySelector(".template").cloneNode(true);
+            newTask.classList.remove('template');
+            newTask.querySelector('.title').value = task.title;
+            newTask.dataset.taskId = task.id;
+            newTask.querySelector('.description').value = task.description;
+            newTask.querySelector('.due_date').value = task.due_date;
+            newTask.querySelector('.checkbox').addEventListener('click', function (e) {
+                e.stopPropagation();
+                completeTask(this);
+            })
+
+            newTask.querySelector('.save-button').addEventListener('click', saveButtonFunction);
+            newTask.querySelector('.task-panel').addEventListener('click', taskPanelFunction);
+
+
+            newTask.classList.add('task');
+            let today = new Date();
+
+            today.setHours(0, 0, 0, 0);
+
+            let taskDate = new Date(task.due_date);
+
+            taskDate.setHours(0, 0, 0, 0);
+
+
+            if (today.valueOf() > taskDate.valueOf()) {
+                listOverdue.appendChild(newTask);
+                let tasksInOverdue = listOverdue.querySelectorAll('.task');
+
+                let noTasksMessage = listOverdue.querySelector('.no-tasks');
+
+                if (tasksInOverdue.length > 0) {
+                    if (noTasksMessage) {
+                        noTasksMessage.style.display = "none";
+                    }
+                } else {
+                    if (!noTasksMessage) {
+                        noTasksMessage.style.display = "block";
+                    }
+                }
+                return;
+            }
+
+
+
+
+
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        refreshTasks();
+
+    });
+
+
+    function saveButtonFunction(e) {
+        e.stopPropagation();
+        var taskPanel = e.target.closest(".task-panel");
+        var title = taskPanel.querySelector(".title").value;
+        var description = taskPanel.querySelector(".description").value;
+        var date = taskPanel.querySelector(".due_date").value;
+
+        var taskId = taskPanel.closest("li").dataset.taskId;
+
+        console.log(title, description)
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("PATCH", `/api/tasks/${taskId}/`, true);
+        xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        var data = JSON.stringify({ title: title, description: description, due_date: date });
+
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                console.log("Task changed successfully!");
+                refreshTasks();
+            } else {
+                console.error("Error changing task:", xhr.status, xhr.statusText);
+            }
+        };
+
+
+        xhr.send(data);
+
+    }
+
+    function taskPanelFunction(e) {
+
+        var taskPanel = this;
+        if (e.target.classList.contains("checkbox")) {
+            return;
+        }
+        if (expandedElement && (expandedElement != this)) {
+            expandedElement.classList.remove("expanded");
+        }
+        if (e.target.classList.contains("cancel-button")) {
+            expandedElement = undefined;
+            taskPanel.classList.remove("expanded");
+            return;
+        }
+        expandedElement = taskPanel;
+        taskPanel.classList.add("expanded");
+
+    };
+
+    var expandedElement;
+
+
+
+</script>
+{% endblock content %}

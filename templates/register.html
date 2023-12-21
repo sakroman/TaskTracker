@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title mt-4 mb-4">Sign up</h2>
+
+                        <form class="form needs-validation" id="registerForm" method="POST" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                {% for field in form %}
+                                <div class="fieldWrapper">
+                                    <div>
+                                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label_tag }}</label>
+                                        <div class="input-group mb-2 has-validation {%if field.errors or form.non_field_errors%}was-validated{%endif%}">
+                                        <input type="{{ field.field.widget.input_type }}" class="form-control" name="{{ field.name }}" id="{{ field.id_for_label }}" required>
+                                        </div>
+                                        <div class="text-danger">
+                                       {{ field.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="text-danger">
+                           {{ form.non_field_errors }}
+                                </div>
+                            <button type="submit" class="btn btn-outline-secondary btn-special text-white mt-4">Register</button>
+                        </form>
+
+                    </div>
+                </div>
+                <h6 class="m-2">Already signed up? <a class="link-body-emphasis badge rounded-pill text-decoration-none text-bg-secondary text-white"  href="{% url 'login' %}">Go to login</a></h6>
+            </div>
+        </div>
+    </div>
+</body>
+
+{% endblock content %}

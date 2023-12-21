@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4">Keep Your Tasks Organized</h1>
+            <p class="lead">Effortlessly manage your tasks with our user-friendly task management platform.</p>
+                          <a class="text-decoration-none text-white" role="button" href="{% url 'register' %}">
+                  <button type="button" class="btn btn-outline-secondary btn-special btn-lg text-white">Get Started</button>
+              </a>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}
